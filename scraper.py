@@ -1,29 +1,29 @@
 import os
 import time
 import requests
-from selenium import webdriver
-
+from selenium import webdriver 
+from selenium.webdriver.common.by import By # This needs to be used 
 
 def fetch_image_urls(query: str, max_links_to_fetch: int, wd: webdriver, sleep_between_interactions: int = 1):
     def scroll_to_end(wd):
-        wd.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+        wd.execute_script("window.scrollTo(0, 1000);")#window.scrollTo is java script which will help to scroll
         time.sleep(sleep_between_interactions)
 
-        # build the google query
+    # build the google query
 
     search_url = "https://www.google.com/search?safe=off&site=&tbm=isch&source=hp&q={q}&oq={q}&gs_l=img"
 
     # load the page
     wd.get(search_url.format(q=query))
 
-    image_urls = set()
+    image_urls = set() #set alwasy store unique values
     image_count = 0
     results_start = 0
     while image_count < max_links_to_fetch:
         scroll_to_end(wd)
 
         # get all image thumbnail results
-        thumbnail_results = wd.find_elements_by_css_selector("img.Q4LuWd")
+        thumbnail_results = wd.find_elements(By.CSS_SELECTOR,"img.Q4LuWd") # driver.find_element_by_class_name is no more working as thats been upgraded to this format of declaration
         number_results = len(thumbnail_results)
 
         print(f"Found: {number_results} search results. Extracting links from {results_start}:{number_results}")
@@ -37,7 +37,7 @@ def fetch_image_urls(query: str, max_links_to_fetch: int, wd: webdriver, sleep_b
                 continue
 
             # extract image urls
-            actual_images = wd.find_elements_by_css_selector('img.n3VNCb')
+            actual_images = wd.find_elements(By.CLASS_NAME, value='r48jcc') # Changed the selector to class name as the previous css selector was removed by google
             for actual_image in actual_images:
                 if actual_image.get_attribute('src') and 'http' in actual_image.get_attribute('src'):
                     image_urls.add(actual_image.get_attribute('src'))
@@ -51,9 +51,9 @@ def fetch_image_urls(query: str, max_links_to_fetch: int, wd: webdriver, sleep_b
             print("Found:", len(image_urls), "image links, looking for more ...")
             time.sleep(30)
             return
-            load_more_button = wd.find_element_by_css_selector(".mye4qd")
-            if load_more_button:
-                wd.execute_script("document.querySelector('.mye4qd').click();")
+        load_more_button = wd.find_element(By.CSS_SELECTOR,".mye4qd")
+        if load_more_button:
+            wd.execute_script("document.querySelector('.mye4qd').click();")
 
         # move the result startpoint further down
         results_start = len(thumbnail_results)
@@ -84,7 +84,7 @@ def search_and_download(search_term: str, driver_path: str, target_path='./image
         os.makedirs(target_folder)
 
     with webdriver.Chrome(executable_path=driver_path) as wd:
-        res = fetch_image_urls(search_term, number_images, wd=wd, sleep_between_interactions=0.5)
+        res = fetch_image_urls(search_term, number_images, wd=wd, sleep_between_interactions=0.5)#THIS FUNCTION WILL RETURN URLS
 
     counter = 0
     for elem in res:
@@ -93,15 +93,16 @@ def search_and_download(search_term: str, driver_path: str, target_path='./image
 
 
 # How to execute this code
-# Step 1 : pip install selenium, pillow, requests
+# Step 1 : pip install selenium. pillow, requests
 # Step 2 : make sure you have chrome installed on your machine
 # Step 3 : Check your chrome version ( go to three dot then help then about google chrome )
 # Step 4 : Download the same chrome driver from here  " https://chromedriver.storage.googleapis.com/index.html "
 # Step 5 : put it inside the same folder of this code
 
 
-DRIVER_PATH = r'chromedriver.exe'
-search_term = 'trump'
+DRIVER_PATH = r"chromedriver.exe" # check the crome version using inside help section of google chrome and then use the same version of driver
+search_term = input("Search Image: ")
+image_no = int(input("Enter the Number of Image needed: "))
 # num of images you can pass it from here  by default it's 10 if you are not passing
 #number_images = 50
-search_and_download(search_term=search_term, driver_path=DRIVER_PATH, number_images=50)
+search_and_download(search_term=search_term, driver_path=DRIVER_PATH, number_images=image_no)
